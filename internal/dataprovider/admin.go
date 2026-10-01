@@ -37,21 +37,23 @@ import (
 
 // Available permissions for SFTPGo admins
 const (
-	PermAdminAny              = "*"
-	PermAdminAddUsers         = "add_users"
-	PermAdminChangeUsers      = "edit_users"
-	PermAdminDeleteUsers      = "del_users"
-	PermAdminViewUsers        = "view_users"
-	PermAdminViewConnections  = "view_conns"
-	PermAdminCloseConnections = "close_conns"
-	PermAdminViewServerStatus = "view_status"
-	PermAdminManageGroups     = "manage_groups"
-	PermAdminManageFolders    = "manage_folders"
-	PermAdminQuotaScans       = "quota_scans"
-	PermAdminManageDefender   = "manage_defender"
-	PermAdminViewDefender     = "view_defender"
-	PermAdminViewEvents       = "view_events"
-	PermAdminDisableMFA       = "disable_mfa"
+	PermAdminViewURLDownloads   = "view_url_downloads"
+	PermAdminManageURLDownloads = "manage_url_downloads"
+	PermAdminAny                = "*"
+	PermAdminAddUsers           = "add_users"
+	PermAdminChangeUsers        = "edit_users"
+	PermAdminDeleteUsers        = "del_users"
+	PermAdminViewUsers          = "view_users"
+	PermAdminViewConnections    = "view_conns"
+	PermAdminCloseConnections   = "close_conns"
+	PermAdminViewServerStatus   = "view_status"
+	PermAdminManageGroups       = "manage_groups"
+	PermAdminManageFolders      = "manage_folders"
+	PermAdminQuotaScans         = "quota_scans"
+	PermAdminManageDefender     = "manage_defender"
+	PermAdminViewDefender       = "view_defender"
+	PermAdminViewEvents         = "view_events"
+	PermAdminDisableMFA         = "disable_mfa"
 )
 
 const (
@@ -64,7 +66,7 @@ const (
 )
 
 var (
-	validAdminPerms = []string{PermAdminAny, PermAdminAddUsers, PermAdminChangeUsers, PermAdminDeleteUsers,
+	validAdminPerms = []string{PermAdminViewURLDownloads, PermAdminManageURLDownloads, PermAdminAny, PermAdminAddUsers, PermAdminChangeUsers, PermAdminDeleteUsers,
 		PermAdminViewUsers, PermAdminManageFolders, PermAdminManageGroups, PermAdminViewConnections,
 		PermAdminCloseConnections, PermAdminViewServerStatus, PermAdminQuotaScans,
 		PermAdminManageDefender, PermAdminViewDefender, PermAdminViewEvents, PermAdminDisableMFA}

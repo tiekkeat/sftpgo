@@ -278,6 +278,8 @@ var (
 	webClientViewPDFPath           string
 	webClientGetPDFPath            string
 	webClientExistPath             string
+	webClientDownloadsPath         string
+	webAdminDownloadsPath          string
 	webClientTasksPath             string
 	webStaticFilesPath             string
 	webOpenAPIPath                 string
@@ -1281,6 +1283,8 @@ func updateWebClientURLs(baseURL string) {
 	webBasePath = path.Join(baseURL, webBasePathDefault)
 	webBaseClientPath = path.Join(baseURL, webBasePathClientDefault)
 	webOIDCRedirectPath = path.Join(baseURL, webOIDCRedirectPathDefault)
+	webClientDownloadsPath = path.Join(baseURL, "/web/client/downloads")
+	webAdminDownloadsPath = path.Join(baseURL, "/web/admin/url-downloads")
 	webClientLoginPath = path.Join(baseURL, webClientLoginPathDefault)
 	webClientOIDCLoginPath = path.Join(baseURL, webClientOIDCLoginPathDefault)
 	webClientTwoFactorPath = path.Join(baseURL, webClientTwoFactorPathDefault)

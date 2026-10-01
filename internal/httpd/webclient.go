@@ -83,6 +83,9 @@ func isZeroTime(t time.Time) bool {
 }
 
 type baseClientPage struct {
+	DownloadsURL     string
+	DownloadsEnabled bool
+	CanDownloadURLs  bool
 	commonBasePage
 	Title           string
 	CurrentURL      string
@@ -127,6 +130,7 @@ type editFilePage struct {
 }
 
 type filesPage struct {
+	URLDownloadDirectory string
 	baseClientPage
 	CurrentDir         string
 	DirsURL            string
@@ -518,6 +522,7 @@ func loadClientTemplates(templatesPath string) {
 	shareUploadTmpl := util.LoadTemplate(nil, shareUploadPath...)
 	shareDownloadTmpl := util.LoadTemplate(nil, shareDownloadPath...)
 
+	clientTemplates["urldownloads.html"] = util.LoadTemplate(nil, filepath.Join(templatesPath, templateCommonDir, templateCommonBase), filepath.Join(templatesPath, templateClientDir, templateClientBase), filepath.Join(templatesPath, templateCommonDir, "urldownloads.html"))
 	clientTemplates[templateClientFiles] = filesTmpl
 	clientTemplates[templateClientProfile] = profileTmpl
 	clientTemplates[templateChangePwd] = changePwdTmpl
@@ -544,23 +549,32 @@ func (s *httpdServer) getBaseClientPageData(title, currentURL string, w http.Res
 	}
 
 	data := baseClientPage{
-		commonBasePage:  getCommonBasePage(r),
-		Title:           title,
-		CurrentURL:      currentURL,
-		FilesURL:        webClientFilesPath,
-		SharesURL:       webClientSharesPath,
-		ShareURL:        webClientSharePath,
-		ProfileURL:      webClientProfilePath,
-		PingURL:         webClientPingPath,
-		ChangePwdURL:    webChangeClientPwdPath,
-		LogoutURL:       webClientLogoutPath,
-		EditURL:         webClientEditFilePath,
-		MFAURL:          webClientMFAPath,
-		CSRFToken:       csrfToken,
-		LoggedUser:      getUserFromToken(r),
-		IsLoggedToShare: false,
-		Branding:        s.binding.webClientBranding(),
-		Languages:       s.binding.languages(),
+		commonBasePage:   getCommonBasePage(r),
+		Title:            title,
+		CurrentURL:       currentURL,
+		DownloadsURL:     webClientDownloadsPath,
+		DownloadsEnabled: urlDownloadManager != nil,
+		FilesURL:         webClientFilesPath,
+		SharesURL:        webClientSharesPath,
+		ShareURL:         webClientSharePath,
+		ProfileURL:       webClientProfilePath,
+		PingURL:          webClientPingPath,
+		ChangePwdURL:     webChangeClientPwdPath,
+		LogoutURL:        webClientLogoutPath,
+		EditURL:          webClientEditFilePath,
+		MFAURL:           webClientMFAPath,
+		CSRFToken:        csrfToken,
+		LoggedUser:       getUserFromToken(r),
+		IsLoggedToShare:  false,
+		Branding:         s.binding.webClientBranding(),
+		Languages:        s.binding.languages(),
+	}
+	// Navigation's user is reconstructed from JWT claims and does not include provider policies.
+	if data.DownloadsEnabled && data.LoggedUser != nil && data.LoggedUser.Username != "" {
+		if user, err := dataprovider.GetUserWithGroupSettings(data.LoggedUser.Username, ""); err == nil {
+			data.LoggedUser.Filters.URLDownloads = user.Filters.URLDownloads
+			data.CanDownloadURLs = user.Filters.URLDownloads.Access == "enabled" && !user.Filters.RequirePasswordChange && !slices.Contains(user.Filters.WebClient, sdk.WebClientWriteDisabled)
+		}
 	}
 	if !strings.HasPrefix(r.RequestURI, webClientPubSharesPath) {
 		data.LoginURL = webClientLoginPath
@@ -783,6 +797,8 @@ func (s *httpdServer) renderSharedFilesPage(w http.ResponseWriter, r *http.Reque
 	baseSharePath := path.Join(webClientPubSharesPath, share.ShareID)
 	baseData.LogoutURL = path.Join(webClientPubSharesPath, share.ShareID, "logout")
 	baseData.IsLoggedToShare = share.Password != ""
+	baseData.CanDownloadURLs = false
+	baseData.DownloadsEnabled = false
 
 	data := filesPage{
 		baseClientPage: baseData,
@@ -843,27 +859,28 @@ func (s *httpdServer) renderUploadToSharePage(w http.ResponseWriter, r *http.Req
 func (s *httpdServer) renderFilesPage(w http.ResponseWriter, r *http.Request, dirName string,
 	err *util.I18nError, user *dataprovider.User) {
 	data := filesPage{
-		baseClientPage:     s.getBaseClientPageData(util.I18nFilesTitle, webClientFilesPath, w, r),
-		Error:              err,
-		CurrentDir:         url.QueryEscape(dirName),
-		DownloadURL:        webClientDownloadZipPath,
-		ViewPDFURL:         webClientViewPDFPath,
-		DirsURL:            webClientDirsPath,
-		FileURL:            webClientFilePath,
-		FileActionsURL:     webClientFileActionsPath,
-		CheckExistURL:      webClientExistPath,
-		TasksURL:           webClientTasksPath,
-		CanAddFiles:        user.CanAddFilesFromWeb(dirName),
-		CanCreateDirs:      user.CanAddDirsFromWeb(dirName),
-		CanRename:          user.CanRenameFromWeb(dirName, dirName),
-		CanDelete:          user.CanDeleteFromWeb(dirName),
-		CanDownload:        user.HasPerm(dataprovider.PermDownload, dirName),
-		CanShare:           user.CanManageShares(),
-		CanCopy:            user.CanCopyFromWeb(dirName, dirName),
-		ShareUploadBaseURL: "",
-		Paths:              getDirMapping(dirName, webClientFilesPath),
-		QuotaUsage:         newUserQuotaUsage(user),
-		KeepAliveInterval:  int(cookieRefreshThreshold / time.Millisecond),
+		baseClientPage:       s.getBaseClientPageData(util.I18nFilesTitle, webClientFilesPath, w, r),
+		Error:                err,
+		URLDownloadDirectory: dirName,
+		CurrentDir:           url.QueryEscape(dirName),
+		DownloadURL:          webClientDownloadZipPath,
+		ViewPDFURL:           webClientViewPDFPath,
+		DirsURL:              webClientDirsPath,
+		FileURL:              webClientFilePath,
+		FileActionsURL:       webClientFileActionsPath,
+		CheckExistURL:        webClientExistPath,
+		TasksURL:             webClientTasksPath,
+		CanAddFiles:          user.CanAddFilesFromWeb(dirName),
+		CanCreateDirs:        user.CanAddDirsFromWeb(dirName),
+		CanRename:            user.CanRenameFromWeb(dirName, dirName),
+		CanDelete:            user.CanDeleteFromWeb(dirName),
+		CanDownload:          user.HasPerm(dataprovider.PermDownload, dirName),
+		CanShare:             user.CanManageShares(),
+		CanCopy:              user.CanCopyFromWeb(dirName, dirName),
+		ShareUploadBaseURL:   "",
+		Paths:                getDirMapping(dirName, webClientFilesPath),
+		QuotaUsage:           newUserQuotaUsage(user),
+		KeepAliveInterval:    int(cookieRefreshThreshold / time.Millisecond),
 	}
 	renderClientTemplate(w, templateClientFiles, data)
 }

@@ -1400,6 +1400,7 @@ func (s *httpdServer) setupRESTAPIRoutes() {
 			router.Group(func(router chi.Router) {
 				router.Use(s.checkAuthRequirements)
 
+				s.registerURLDownloadRoutes(router, "/api/v2/url-downloads", true)
 				router.With(s.checkPerms(dataprovider.PermAdminViewServerStatus)).
 					Get(serverStatusPath, func(w http.ResponseWriter, r *http.Request) {
 						r.Body = http.MaxBytesReader(w, r.Body, maxRequestSize)
@@ -1517,6 +1518,10 @@ func (s *httpdServer) setupRESTAPIRoutes() {
 			router.With(forbidAPIKeyAuthentication, s.checkHTTPUserPerm(sdk.WebClientMFADisabled)).
 				Post(user2FARecoveryCodesPath, generateRecoveryCodes)
 
+			router.Group(func(r chi.Router) {
+				r.Use(s.checkAuthRequirements)
+				s.registerURLDownloadRoutes(r, "/api/v2/user/url-downloads", false)
+			})
 			router.With(s.checkAuthRequirements, compressor.Handler).Get(userDirsPath, readUserFolder)
 			router.With(s.checkAuthRequirements, s.checkHTTPUserPerm(sdk.WebClientWriteDisabled)).
 				Post(userDirsPath, createUserDir)
@@ -1630,6 +1635,11 @@ func (s *httpdServer) setupWebClientRoutes() {
 			router.Use(jwtAuthenticatorWebClient)
 
 			router.Get(webClientLogoutPath, s.handleWebClientLogout)
+			router.With(s.checkAuthRequirements, s.refreshCookie).Get(webClientDownloadsPath, s.handleClientDownloads)
+			router.Group(func(r chi.Router) {
+				r.Use(s.checkAuthRequirements, s.refreshCookie, s.verifyCSRFHeader)
+				s.registerURLDownloadRoutes(r, webClientDownloadsPath+"/jobs", false)
+			})
 			router.With(s.checkAuthRequirements, s.refreshCookie).Get(webClientFilesPath, s.handleClientGetFiles)
 			router.With(s.checkAuthRequirements, s.refreshCookie).Get(webClientViewPDFPath, s.handleClientViewPDF)
 			router.With(s.checkAuthRequirements, s.refreshCookie).Get(webClientGetPDFPath, s.handleClientGetPDF)
@@ -1768,6 +1778,11 @@ func (s *httpdServer) setupWebAdminRoutes() {
 
 				router.With(s.checkPerms(dataprovider.PermAdminViewUsers), s.refreshCookie).
 					Get(webUsersPath, s.handleGetWebUsers)
+				router.With(s.checkPerms(dataprovider.PermAdminViewURLDownloads), s.refreshCookie).Get(webAdminDownloadsPath, s.handleAdminDownloads)
+				router.Group(func(r chi.Router) {
+					r.Use(s.verifyCSRFHeader)
+					s.registerURLDownloadRoutes(r, webAdminDownloadsPath+"/jobs", true)
+				})
 				router.With(s.checkPerms(dataprovider.PermAdminViewUsers), compressor.Handler, s.refreshCookie).
 					Get(webUsersPath+jsonAPISuffix, getAllUsers)
 				router.With(s.checkPerms(dataprovider.PermAdminAddUsers), s.refreshCookie).

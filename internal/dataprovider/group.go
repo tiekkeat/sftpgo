@@ -23,6 +23,7 @@ import (
 
 	"github.com/sftpgo/sdk"
 
+	"github.com/drakkan/sftpgo/v2/internal/downloadmanager"
 	"github.com/drakkan/sftpgo/v2/internal/logger"
 	"github.com/drakkan/sftpgo/v2/internal/plugin"
 	"github.com/drakkan/sftpgo/v2/internal/util"
@@ -31,6 +32,7 @@ import (
 
 // GroupUserSettings defines the settings to apply to users
 type GroupUserSettings struct {
+	URLDownloads downloadmanager.Policy `json:"url_downloads,omitempty"`
 	sdk.BaseGroupUserSettings
 	// Filesystem configuration details
 	FsConfig vfs.Filesystem `json:"filesystem"`
@@ -168,6 +170,9 @@ func (g *Group) validate() error {
 }
 
 func (g *Group) validateUserSettings() error {
+	if err := g.UserSettings.URLDownloads.Validate(); err != nil {
+		return util.NewValidationError(err.Error())
+	}
 	if g.UserSettings.HomeDir != "" {
 		g.UserSettings.HomeDir = filepath.Clean(g.UserSettings.HomeDir)
 		if !filepath.IsAbs(g.UserSettings.HomeDir) {
@@ -229,6 +234,7 @@ func (g *Group) getACopy() Group {
 			Admins:      admins,
 		},
 		UserSettings: GroupUserSettings{
+			URLDownloads: g.UserSettings.URLDownloads,
 			BaseGroupUserSettings: sdk.BaseGroupUserSettings{
 				HomeDir:              g.UserSettings.HomeDir,
 				MaxSessions:          g.UserSettings.MaxSessions,

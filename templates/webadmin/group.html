@@ -244,7 +244,8 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
 
                             {{- template "user_group_access_time" .Group.UserSettings.Filters}}
 
-                            <div class="form-group row mt-10">
+
+<div class="form-group row mt-10">
                                 <label for="idMaxSessions" data-i18n="filters.max_sessions" class="col-md-3 col-form-label">Max sessions</label>
                                 <div class="col-md-9">
                                     <input id="idMaxSessions" type="number" min="0" class="form-control" name="max_sessions" value="{{.Group.UserSettings.MaxSessions}}" aria-describedby="idMaxSessionsHelp" />
@@ -327,6 +328,26 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
                         </div>
                     </div>
 
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingURLDownloads">
+                        <button class="accordion-button section-title-inner text-primary collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseURLDownloads" aria-expanded="false" aria-controls="collapseURLDownloads">
+                            <span data-i18n="url_downloads.policy">URL download policy</span>
+                        </button>
+                    </h2>
+                    <div id="collapseURLDownloads" class="accordion-collapse collapse" aria-labelledby="headingURLDownloads" data-bs-parent="#accordionUser">
+                        <div class="accordion-body">
+                            <div class="form-group row mb-5"><label class="col-md-3 col-form-label" data-i18n="url_downloads.access" for="url_download_access">Access</label><div class="col-md-9"><select id="url_download_access" name="url_download_access" class="form-select">
+                            <option value="inherit" {{if or (eq .Group.UserSettings.URLDownloads.Access "") (eq .Group.UserSettings.URLDownloads.Access "inherit")}}selected{{end}} data-i18n="url_downloads.inherit">Inherit</option><option value="enabled" {{if eq .Group.UserSettings.URLDownloads.Access "enabled"}}selected{{end}} data-i18n="url_downloads.enabled">Enabled</option><option value="disabled" {{if eq .Group.UserSettings.URLDownloads.Access "disabled"}}selected{{end}} data-i18n="url_downloads.disabled">Disabled</option></select></div></div>
+                            <p class="form-text" data-i18n="url_downloads.policy_help">Zero limits inherit from the primary group or server. Server ceilings always apply. Access is disabled unless explicitly enabled.</p>
+                            <div class="form-group row mb-5"><label for="url_download_max_active" class="col-md-3 col-form-label" data-i18n="url_downloads.max_active">Active jobs</label><div class="col-md-9"><input id="url_download_max_active" name="url_download_max_active" type="number" min="0" class="form-control" value="{{.Group.UserSettings.URLDownloads.MaxActive}}"></div></div>
+                            <div class="form-group row mb-5"><label for="url_download_max_pending" class="col-md-3 col-form-label" data-i18n="url_downloads.max_pending">Pending jobs</label><div class="col-md-9"><input id="url_download_max_pending" name="url_download_max_pending" type="number" min="0" class="form-control" value="{{.Group.UserSettings.URLDownloads.MaxPending}}"></div></div>
+                            <div class="form-group row mb-5"><label for="url_download_speed_limit" class="col-md-3 col-form-label" data-i18n="url_downloads.speed_limit">Fetch speed (bytes/second)</label><div class="col-md-9"><input id="url_download_speed_limit" name="url_download_speed_limit" type="number" min="0" class="form-control" value="{{.Group.UserSettings.URLDownloads.SpeedLimit}}"></div></div>
+                            <div class="form-group row mb-5"><label for="url_download_max_file_size" class="col-md-3 col-form-label" data-i18n="url_downloads.max_file_size">Maximum file size (bytes)</label><div class="col-md-9"><input id="url_download_max_file_size" name="url_download_max_file_size" type="number" min="0" class="form-control" value="{{.Group.UserSettings.URLDownloads.MaxFileSize}}"></div></div>
+                            <div class="form-group row mb-5"><label for="url_download_max_staging_size" class="col-md-3 col-form-label" data-i18n="url_downloads.max_staging_size">Staging allowance (bytes)</label><div class="col-md-9"><input id="url_download_max_staging_size" name="url_download_max_staging_size" type="number" min="0" class="form-control" value="{{.Group.UserSettings.URLDownloads.MaxStagingSize}}"></div></div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="accordion-item">

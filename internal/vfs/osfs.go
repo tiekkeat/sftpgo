@@ -764,3 +764,6 @@ func (l *osFsDirLister) Next(limit int) ([]os.FileInfo, error) {
 func (l *osFsDirLister) Close() error {
 	return l.f.Close()
 }
+
+// SupportsExclusiveCreate reports whether create-only URL imports can preserve conflicts.
+func (fs *OsFs) SupportsExclusiveCreate() bool { return true }

@@ -32,6 +32,7 @@ import (
 	"github.com/rs/xid"
 	"github.com/sftpgo/sdk"
 
+	"github.com/drakkan/sftpgo/v2/internal/downloadmanager"
 	"github.com/drakkan/sftpgo/v2/internal/kms"
 	"github.com/drakkan/sftpgo/v2/internal/logger"
 	"github.com/drakkan/sftpgo/v2/internal/mfa"
@@ -124,6 +125,7 @@ type UserTOTPConfig struct {
 // UserFilters defines additional restrictions for a user
 // TODO: rename to UserOptions in v3
 type UserFilters struct {
+	URLDownloads downloadmanager.Policy `json:"url_downloads,omitempty"`
 	sdk.BaseUserFilters
 	// User must change password from WebClient/REST API at next login.
 	RequirePasswordChange bool `json:"require_password_change,omitempty"`
@@ -1766,6 +1768,7 @@ func (u *User) mergeCryptFsConfig(group *Group) {
 }
 
 func (u *User) mergeWithPrimaryGroup(group *Group, replacer *groupRenderer) {
+	u.Filters.URLDownloads = u.Filters.URLDownloads.Inherit(group.UserSettings.URLDownloads)
 	if group.UserSettings.HomeDir != "" {
 		u.HomeDir = filepath.Clean(u.replacePlaceholder(group.UserSettings.HomeDir, replacer))
 	}
@@ -2029,6 +2032,7 @@ func (u *User) getACopy() User {
 	filters := UserFilters{
 		BaseUserFilters: copyBaseUserFilters(u.Filters.BaseUserFilters),
 	}
+	filters.URLDownloads = u.Filters.URLDownloads
 	filters.RequirePasswordChange = u.Filters.RequirePasswordChange
 	filters.TOTPConfig.Enabled = u.Filters.TOTPConfig.Enabled
 	filters.TOTPConfig.ConfigName = u.Filters.TOTPConfig.ConfigName

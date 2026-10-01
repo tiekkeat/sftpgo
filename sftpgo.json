@@ -1,4 +1,32 @@
 {
+  "url_downloads": {
+      "enabled": false,
+      "database_path": "url-downloads/jobs.db",
+      "staging_path": "url-downloads/staging",
+      "max_active": 8,
+      "max_active_per_user": 2,
+      "max_pending": 1000,
+      "max_pending_per_user": 100,
+      "max_file_size": 107374182400,
+      "max_staging_size": 536870912000,
+      "max_staging_per_user": 214748364800,
+      "min_free_space": 5368709120,
+      "speed_limit": 0,
+      "speed_limit_per_user": 0,
+      "retry_max": 3,
+      "connect_timeout": 15,
+      "header_timeout": 30,
+      "idle_timeout": 120,
+      "max_redirects": 5,
+      "staging_retention_hours": 168,
+      "history_retention_hours": 720,
+      "allowed_ports": [
+          80,
+          443
+      ],
+      "allowed_hosts": [],
+      "denied_hosts": []
+  },
   "common": {
     "idle_timeout": 15,
     "upload_mode": 0,

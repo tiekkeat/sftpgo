@@ -440,7 +440,11 @@ func (fs *SFTPFs) Create(name string, flag, _ int) (File, PipeWriter, func(), er
 		return f, nil, nil, err
 	}
 	// buffering is enabled
-	f, err := client.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC)
+	writeFlag := os.O_WRONLY | os.O_CREATE | os.O_TRUNC
+	if flag&os.O_EXCL != 0 {
+		writeFlag = os.O_WRONLY | os.O_CREATE | os.O_EXCL
+	}
+	f, err := client.OpenFile(name, writeFlag)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -1242,3 +1246,6 @@ func (c *sftpConnectionsCache) Cleanup() {
 		logger.Debug(logSenderSFTPCache, "", "connection closed, err: %v", err)
 	}
 }
+
+// SupportsExclusiveCreate reports whether create-only URL imports can preserve conflicts.
+func (fs *SFTPFs) SupportsExclusiveCreate() bool { return true }

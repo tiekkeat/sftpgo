@@ -91,6 +91,7 @@ func handleSIGUSR1() {
 
 func handleInterrupt() {
 	logger.Debug(logSender, "", "Received interrupt request")
+	httpd.StopURLDownloads()
 	plugin.Handler.Cleanup()
 	common.WaitForTransfers(graceTime)
 	os.Exit(0)

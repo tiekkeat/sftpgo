@@ -3537,6 +3537,9 @@ func ValidateUser(user *User) error {
 	if err := validatePublicKeys(user); err != nil {
 		return err
 	}
+	if err := user.Filters.URLDownloads.Validate(); err != nil {
+		return util.NewValidationError(err.Error())
+	}
 	if err := validateBaseFilters(&user.Filters.BaseUserFilters); err != nil {
 		return err
 	}

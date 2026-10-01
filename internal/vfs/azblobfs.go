@@ -282,7 +282,7 @@ func (fs *AzureBlobFs) Create(name string, flag, checks int) (File, PipeWriter, 
 		defer cancelFn()
 
 		blockBlob := fs.containerClient.NewBlockBlobClient(name)
-		err := fs.handleMultipartUpload(ctx, r, blockBlob, &headers, metadata)
+		err := fs.handleMultipartUpload(ctx, r, blockBlob, &headers, metadata, flag != -1 && flag&os.O_EXCL != 0)
 		r.CloseWithError(err)
 		p.Done(err)
 		fsLog(fs, logger.LevelDebug, "upload completed, path: %q, readed bytes: %v, err: %+v", name, r.GetReadedBytes(), err)
@@ -309,7 +309,7 @@ func (fs *AzureBlobFs) Create(name string, flag, checks int) (File, PipeWriter, 
 		}
 	}
 
-	if uploadMode&16 != 0 {
+	if uploadMode&16 != 0 && (flag == -1 || flag&os.O_EXCL == 0) {
 		return nil, p, nil, nil
 	}
 	return nil, p, cancelFn, nil
@@ -1035,7 +1035,7 @@ func (fs *AzureBlobFs) handleMultipartDownload(ctx context.Context, blockBlob *b
 }
 
 func (fs *AzureBlobFs) handleMultipartUpload(ctx context.Context, reader io.Reader,
-	blockBlob *blockblob.Client, httpHeaders *blob.HTTPHeaders, metadata map[string]*string,
+	blockBlob *blockblob.Client, httpHeaders *blob.HTTPHeaders, metadata map[string]*string, exclusive ...bool,
 ) error {
 	partSize := fs.config.UploadPartSize
 	guard := make(chan struct{}, fs.config.UploadConcurrency)
@@ -1136,6 +1136,10 @@ func (fs *AzureBlobFs) handleMultipartUpload(ctx context.Context, reader io.Read
 	commitOptions := blockblob.CommitBlockListOptions{
 		HTTPHeaders: httpHeaders,
 		Metadata:    metadata,
+	}
+	if len(exclusive) > 0 && exclusive[0] {
+		etag := azcore.ETag("*")
+		commitOptions.AccessConditions = &blob.AccessConditions{ModifiedAccessConditions: &blob.ModifiedAccessConditions{IfNoneMatch: &etag}}
 	}
 	if fs.config.AccessTier != "" {
 		commitOptions.Tier = (*blob.AccessTier)(&fs.config.AccessTier)
@@ -1292,3 +1296,6 @@ func (l *azureBlobDirLister) Close() error {
 	clear(l.prefixes)
 	return l.baseDirLister.Close()
 }
+
+// SupportsExclusiveCreate reports whether create-only URL imports can preserve conflicts.
+func (fs *AzureBlobFs) SupportsExclusiveCreate() bool { return true }

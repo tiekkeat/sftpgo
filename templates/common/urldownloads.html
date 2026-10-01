@@ -1,0 +1,48 @@
+{{- template "base" .}}
+{{- define "page_body"}}
+<div class="card shadow-sm"><div class="card-header"><h3 class="card-title" data-i18n="url_downloads.title">Downloads</h3></div><div class="card-body">
+<p data-i18n="url_downloads.description">Fetch a direct public HTTP/HTTPS file into your storage. Fetching and importing have separate progress. Existing files are preserved.</p>
+<div id="download-error" class="alert alert-danger d-none" role="alert"></div>
+{{if .CanCreate}}
+<form id="download-form" class="mb-8">
+<label for="download-url" class="form-label" data-i18n="url_downloads.url">Source URL</label><input type="url" id="download-url" class="form-control mb-4" required maxlength="8192" placeholder="https://example.com/file.zip" autocomplete="off">
+<div class="row"><div class="col-md-6"><label for="download-directory" class="form-label" data-i18n="url_downloads.directory">Destination folder</label><input id="download-directory" class="form-control" value="/" required></div><div class="col-md-6"><label for="download-filename" class="form-label" data-i18n="url_downloads.filename">Filename</label><input id="download-filename" class="form-control" required></div></div>
+<button class="btn btn-primary mt-4" type="submit" data-i18n="url_downloads.add">Download from URL</button>
+</form>
+{{end}}
+<p id="download-limits" class="text-muted"></p>
+<div class="table-responsive"><table class="table align-middle"><thead><tr><th data-i18n="url_downloads.destination">Destination</th>{{if .Admin}}<th data-i18n="url_downloads.owner">User</th>{{end}}<th data-i18n="url_downloads.state">State</th><th data-i18n="url_downloads.progress">Progress</th><th data-i18n="url_downloads.details">Details</th><th data-i18n="url_downloads.actions">Actions</th></tr></thead><tbody id="download-jobs"></tbody></table></div>
+</div></div>
+{{- end}}
+{{- define "extra_js"}}
+<script {{if .CSPNonce}}nonce="{{.CSPNonce}}"{{end}}>
+(() => {
+ const api={{.APIURL}}, csrf={{.CSRFToken}}, admin={{.Admin}}, canManage={{.CanManage}};
+ const errorBox=document.getElementById('download-error'), body=document.getElementById('download-jobs');
+ const t=(key,fallback)=>window.i18next ? i18next.t('url_downloads.'+key,{defaultValue:fallback}) : fallback;
+ let busy=false;
+ function error(message){errorBox.textContent=message;errorBox.classList.toggle('d-none',!message);}
+ async function request(url,method='GET',data){const options={method,headers:{'X-CSRF-TOKEN':csrf},credentials:'same-origin'};if(data!==undefined){options.headers['Content-Type']='application/json';options.body=JSON.stringify(data);}const response=await fetch(url,options);const result=await response.json();if(!response.ok)throw Error(result.error||result.message||t('request_failed','Download operation failed'));return result;}
+ function bytes(n){if(n<0)return t('unknown','Unknown');const units=['B','KiB','MiB','GiB','TiB'];let i=0;while(n>=1024&&i<4){n/=1024;i++;}return n.toFixed(i?1:0)+' '+units[i];}
+ function cell(row,text){const td=document.createElement('td');td.textContent=text;row.append(td);return td;}
+ function button(td,label,action){const b=document.createElement('button');b.type='button';b.className='btn btn-sm btn-light-primary me-2 mb-2';b.textContent=label;b.onclick=async()=>{b.disabled=true;try{await action();error('');await refresh();}catch(e){error(e.message);}finally{b.disabled=false;}};td.append(b);}
+ async function refresh(){if(busy||document.hidden)return;busy=true;try{
+  const result=await request(api);body.replaceChildren();
+  if(result.limits){const l=result.limits;document.getElementById('download-limits').textContent=t('limits','Limits')+': '+l.max_active+' '+t('active','active jobs')+', '+bytes(l.max_file_size)+' '+t('per_file','per file')+', '+(l.speed_limit?bytes(l.speed_limit)+'/s':t('unlimited','unlimited fetch speed'));}
+  for(const job of result.jobs){const row=document.createElement('tr');const destination=cell(row,job.destination);const source=document.createElement("div");source.className="text-muted text-break fs-7";source.textContent=job.source;destination.append(source);if(admin)cell(row,job.username);cell(row,t(job.state,job.state));
+   const imported=job.phase==='import';const done=imported?job.bytes_imported:job.bytes_fetched;
+   const td=cell(row,(imported?t('import','Import'):t('fetch','Fetch'))+': '+bytes(done)+' / '+bytes(job.total_bytes));const progress=document.createElement('progress');progress.className='w-100';progress.max=job.total_bytes>0?job.total_bytes:1;if(job.total_bytes>=0)progress.value=done;td.append(document.createElement('br'),progress);
+   let details=job.error||job.notice||'';if(job.speed>0)details+=' '+bytes(job.speed)+'/s';if(job.eta_seconds>=0)details+=' ETA '+job.eta_seconds+'s';details+=' '+new Date(job.updated_at).toLocaleString();cell(row,details);const actions=cell(row,'');
+   if(canManage){if(!admin&&(job.state==='queued'||job.state==='fetching'))button(actions,t('pause','Pause'),()=>request(api+'/'+job.id+'/pause','POST'));
+    if(!admin&&job.state==='paused')button(actions,t('resume','Resume'),()=>request(api+'/'+job.id+'/resume','POST'));
+    if(!['completed','failed','canceled'].includes(job.state))button(actions,t('cancel','Cancel'),()=>request(api+'/'+job.id+'/cancel','POST'));
+    if(!admin&&job.state==='failed')button(actions,t('retry','Retry'),()=>{const dest=prompt(t('retry_destination','Destination path for retry'),job.destination);if(dest===null)return Promise.resolve();return request(api+'/'+job.id+'/retry','POST',{destination:dest});});
+    if(['completed','failed','canceled'].includes(job.state))button(actions,t('remove','Remove history'),()=>request(api+'/'+job.id,'DELETE'));
+   }body.append(row);
+  }
+ }catch(e){error(e.message);}finally{busy=false;}}
+ const form=document.getElementById('download-form');if(form){const source=document.getElementById('download-url'), filename=document.getElementById('download-filename'), directory=document.getElementById('download-directory');directory.value=new URLSearchParams(location.search).get('directory')||'/';source.addEventListener('change',()=>{if(!filename.value){try{filename.value=decodeURIComponent(new URL(source.value).pathname.split('/').pop());}catch(_){}}});form.onsubmit=async event=>{event.preventDefault();const submit=form.querySelector('button');submit.disabled=true;try{if(/[\\/]/.test(filename.value)||['.','..'].includes(filename.value))throw Error(t('invalid_filename','Choose a filename without path separators'));await request(api,'POST',{url:source.value,destination:directory.value.replace(/\/$/,'')+'/'+filename.value});source.value='';filename.value='';error('');await refresh();}catch(e){error(e.message);}finally{submit.disabled=false;}};}
+ refresh();setInterval(refresh,2000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
+})();
+</script>
+{{- end}}

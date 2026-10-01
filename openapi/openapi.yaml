@@ -16,6 +16,7 @@ tags:
   - name: data retention
   - name: events
   - name: metadata
+  - name: URL downloads
   - name: user APIs
   - name: public shares
   - name: event manager
@@ -4784,6 +4785,430 @@ paths:
           $ref: '#/components/responses/InternalServerError'
         default:
           $ref: '#/components/responses/DefaultResponse'
+  /user/url-downloads:
+    get:
+      tags:
+      - URL downloads
+      summary: List your jobs and effective limits
+      security:
+      - BearerAuth: []
+      - APIKeyAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/URLDownloadList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '413':
+          description: Storage or upload quota exceeded
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Invalid state transition or destination conflict
+        '429':
+          description: Queue admission limit reached
+        '503':
+          description: URL download manager is disabled
+    post:
+      tags:
+      - URL downloads
+      summary: Queue a URL download
+      security:
+      - BearerAuth: []
+      - APIKeyAuth: []
+      responses:
+        '202':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/URLDownloadJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '413':
+          description: Storage or upload quota exceeded
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Invalid state transition or destination conflict
+        '429':
+          description: Queue admission limit reached
+        '503':
+          description: URL download manager is disabled
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/URLDownloadCreate'
+  /user/url-downloads/{id}:
+    get:
+      tags:
+      - URL downloads
+      summary: Get your download job
+      security:
+      - BearerAuth: []
+      - APIKeyAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/URLDownloadJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '413':
+          description: Storage or upload quota exceeded
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Invalid state transition or destination conflict
+        '429':
+          description: Queue admission limit reached
+        '503':
+          description: URL download manager is disabled
+      parameters: &id001
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    delete:
+      tags:
+      - URL downloads
+      summary: Delete terminal history and staging; preserve completed destination files
+      security:
+      - BearerAuth: []
+      - APIKeyAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/URLDownloadJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '413':
+          description: Storage or upload quota exceeded
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Invalid state transition or destination conflict
+        '429':
+          description: Queue admission limit reached
+        '503':
+          description: URL download manager is disabled
+      parameters: *id001
+  /user/url-downloads/{id}/pause:
+    post:
+      tags:
+      - URL downloads
+      summary: Pause your download job
+      security:
+      - BearerAuth: []
+      - APIKeyAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/URLDownloadJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '413':
+          description: Storage or upload quota exceeded
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Invalid state transition or destination conflict
+        '429':
+          description: Queue admission limit reached
+        '503':
+          description: URL download manager is disabled
+      parameters: *id001
+  /user/url-downloads/{id}/resume:
+    post:
+      tags:
+      - URL downloads
+      summary: Resume your download job
+      security:
+      - BearerAuth: []
+      - APIKeyAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/URLDownloadJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '413':
+          description: Storage or upload quota exceeded
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Invalid state transition or destination conflict
+        '429':
+          description: Queue admission limit reached
+        '503':
+          description: URL download manager is disabled
+      parameters: *id001
+  /user/url-downloads/{id}/cancel:
+    post:
+      tags:
+      - URL downloads
+      summary: Cancel your download job
+      security:
+      - BearerAuth: []
+      - APIKeyAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/URLDownloadJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '413':
+          description: Storage or upload quota exceeded
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Invalid state transition or destination conflict
+        '429':
+          description: Queue admission limit reached
+        '503':
+          description: URL download manager is disabled
+      parameters: *id001
+  /user/url-downloads/{id}/retry:
+    post:
+      tags:
+      - URL downloads
+      summary: Retry your download job
+      security:
+      - BearerAuth: []
+      - APIKeyAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/URLDownloadJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '413':
+          description: Storage or upload quota exceeded
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Invalid state transition or destination conflict
+        '429':
+          description: Queue admission limit reached
+        '503':
+          description: URL download manager is disabled
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                destination:
+                  type: string
+                  description: Optional replacement destination for failed jobs
+      parameters: *id001
+  /url-downloads:
+    get:
+      tags:
+      - URL downloads
+      summary: List administrator-visible jobs; requires view_url_downloads
+      security:
+      - BearerAuth: []
+      - APIKeyAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/URLDownloadList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '413':
+          description: Storage or upload quota exceeded
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Invalid state transition or destination conflict
+        '429':
+          description: Queue admission limit reached
+        '503':
+          description: URL download manager is disabled
+  /url-downloads/{id}:
+    get:
+      tags:
+      - URL downloads
+      summary: Inspect a role-scoped job; requires view_url_downloads
+      security:
+      - BearerAuth: []
+      - APIKeyAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/URLDownloadJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '413':
+          description: Storage or upload quota exceeded
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Invalid state transition or destination conflict
+        '429':
+          description: Queue admission limit reached
+        '503':
+          description: URL download manager is disabled
+      parameters: *id001
+    delete:
+      tags:
+      - URL downloads
+      summary: Delete terminal history; requires manage_url_downloads
+      security:
+      - BearerAuth: []
+      - APIKeyAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/URLDownloadJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '413':
+          description: Storage or upload quota exceeded
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Invalid state transition or destination conflict
+        '429':
+          description: Queue admission limit reached
+        '503':
+          description: URL download manager is disabled
+      parameters: *id001
+  /url-downloads/{id}/cancel:
+    post:
+      tags:
+      - URL downloads
+      summary: Cancel a role-scoped job; requires manage_url_downloads
+      security:
+      - BearerAuth: []
+      - APIKeyAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/URLDownloadJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '413':
+          description: Storage or upload quota exceeded
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Invalid state transition or destination conflict
+        '429':
+          description: Queue admission limit reached
+        '503':
+          description: URL download manager is disabled
+      parameters: *id001
 components:
   responses:
     BadRequest:
@@ -4882,6 +5307,8 @@ components:
         - edit_users
         - del_users
         - view_users
+        - view_url_downloads
+        - manage_url_downloads
         - view_conns
         - close_conns
         - view_status
@@ -5455,6 +5882,8 @@ components:
         - $ref: '#/components/schemas/BaseUserFilters'
         - type: object
           properties:
+            url_downloads:
+              $ref: '#/components/schemas/URLDownloadPolicy'
             require_password_change:
               type: boolean
               description: 'User must change password from WebClient/REST API at next login'
@@ -6577,6 +7006,8 @@ components:
     GroupUserSettings:
       type: object
       properties:
+        url_downloads:
+          $ref: '#/components/schemas/URLDownloadPolicy'
         home_dir:
           type: string
         max_sessions:
@@ -7407,6 +7838,119 @@ components:
         expires_at:
           type: string
           format: date-time
+    URLDownloadPolicy:
+      type: object
+      description: Opt-in URL download access and per-user ceilings. Zero numeric values inherit. Explicit user settings
+        override primary-group settings; global ceilings always apply.
+      properties:
+        access:
+          type: string
+          enum:
+          - inherit
+          - enabled
+          - disabled
+        max_active:
+          type: integer
+          format: int64
+          minimum: 0
+        max_pending:
+          type: integer
+          format: int64
+          minimum: 0
+        speed_limit:
+          type: integer
+          format: int64
+          minimum: 0
+        max_file_size:
+          type: integer
+          format: int64
+          minimum: 0
+        max_staging_size:
+          type: integer
+          format: int64
+          minimum: 0
+    URLDownloadCreate:
+      type: object
+      required:
+      - url
+      - destination
+      additionalProperties: false
+      properties:
+        url:
+          type: string
+          format: uri
+          description: Direct public HTTP/HTTPS URL. URL credentials and fragments are rejected; signed query parameters
+            are accepted and stored encrypted.
+        destination:
+          type: string
+          description: Absolute virtual file path in an existing writable directory. Existing files and symlink targets
+            are never overwritten.
+    URLDownloadJob:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        source:
+          type: string
+          description: Source URL with its query string removed.
+        destination:
+          type: string
+        state:
+          type: string
+          enum:
+          - queued
+          - fetching
+          - paused
+          - importing
+          - completed
+          - failed
+          - canceled
+        phase:
+          type: string
+          enum:
+          - fetch
+          - import
+        bytes_fetched:
+          type: integer
+          format: int64
+        bytes_imported:
+          type: integer
+          format: int64
+        total_bytes:
+          type: integer
+          format: int64
+        speed:
+          type: integer
+          format: int64
+        eta_seconds:
+          type: integer
+          format: int64
+        attempts:
+          type: integer
+          format: int64
+        created_at:
+          type: integer
+          format: int64
+        updated_at:
+          type: integer
+          format: int64
+        error:
+          type: string
+        notice:
+          type: string
+    URLDownloadList:
+      type: object
+      properties:
+        jobs:
+          type: array
+          items:
+            $ref: '#/components/schemas/URLDownloadJob'
+        limits:
+          $ref: '#/components/schemas/URLDownloadPolicy'
+        enabled:
+          type: boolean
   securitySchemes:
     BasicAuth:
       type: http

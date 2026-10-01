@@ -113,6 +113,19 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
     </a>
 </div>
 {{- end}}
+{{- if and .DownloadsEnabled (.LoggedUser.HasPermission "view_url_downloads")}}
+<div class="menu-item">
+    <a class="menu-link{{if eq .CurrentURL .DownloadsURL}} active{{end}}" href="{{.DownloadsURL}}">
+        <span class="menu-icon" aria-hidden="true">
+            <i class="ki-duotone ki-cloud-download fs-1">
+                <span class="path1"></span>
+                <span class="path2"></span>
+            </i>
+        </span>
+        <span class="menu-title" data-i18n="url_downloads.title">URL downloads</span>
+    </a>
+</div>
+{{- end}}
 {{- if .LoggedUser.HasPermission "view_conns"}}
 <div class="menu-item">
     <a class="menu-link {{- if eq .CurrentURL .ConnectionsURL}} active{{- end}}" href="{{.ConnectionsURL}}">

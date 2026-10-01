@@ -112,6 +112,8 @@ var (
 )
 
 type basePage struct {
+	DownloadsURL     string
+	DownloadsEnabled bool
 	commonBasePage
 	Title               string
 	CurrentURL          string
@@ -589,6 +591,7 @@ func loadAdminTemplates(templatesPath string) {
 	adminTemplates[templateRoles] = rolesTmpl
 	adminTemplates[templateRole] = roleTmpl
 	adminTemplates[templateEvents] = eventsTmpl
+	adminTemplates["urldownloads.html"] = util.LoadTemplate(nil, filepath.Join(templatesPath, templateCommonDir, templateCommonBase), filepath.Join(templatesPath, templateAdminDir, templateBase), filepath.Join(templatesPath, templateCommonDir, "urldownloads.html"))
 	adminTemplates[templateConfigs] = configsTmpl
 }
 
@@ -633,6 +636,8 @@ func (s *httpdServer) getBasePageData(title, currentURL string, w http.ResponseW
 	}
 	return basePage{
 		commonBasePage:      getCommonBasePage(r),
+		DownloadsURL:        webAdminDownloadsPath,
+		DownloadsEnabled:    urlDownloadManager != nil,
 		Title:               title,
 		CurrentURL:          currentURL,
 		UsersURL:            webUsersPath,
@@ -2160,6 +2165,11 @@ func getUserFromPostFields(r *http.Request) (dataprovider.User, error) {
 		FsConfig:       fsConfig,
 		Groups:         getGroupsFromUserPostFields(r),
 	}
+	policy, err := getURLDownloadPolicyFromForm(r)
+	if err != nil {
+		return user, err
+	}
+	user.Filters.URLDownloads = policy
 	return user, nil
 }
 
@@ -2229,6 +2239,11 @@ func getGroupFromPostFields(r *http.Request) (dataprovider.Group, error) {
 		},
 		VirtualFolders: getVirtualFoldersFromPostFields(r),
 	}
+	policy, err := getURLDownloadPolicyFromForm(r)
+	if err != nil {
+		return group, err
+	}
+	group.UserSettings.URLDownloads = policy
 	return group, nil
 }
 

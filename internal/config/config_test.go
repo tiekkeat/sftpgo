@@ -1683,3 +1683,21 @@ func TestConfigFromEnv(t *testing.T) {
 	acmeConfig := config.GetACMEConfig()
 	assert.Equal(t, 5002, acmeConfig.HTTP01Challenge.Port)
 }
+
+func TestURLDownloadsConfiguration(t *testing.T) {
+	reset()
+	t.Setenv("SFTPGO_URL_DOWNLOADS__ENABLED", "true")
+	t.Setenv("SFTPGO_URL_DOWNLOADS__MAX_ACTIVE", "3")
+	t.Setenv("SFTPGO_URL_DOWNLOADS__SPEED_LIMIT", "1048576")
+	t.Setenv("SFTPGO_URL_DOWNLOADS__ALLOWED_PORTS", "80,443,8443")
+	t.Setenv("SFTPGO_URL_DOWNLOADS__ALLOWED_HOSTS", "cdn.example.com,*.example.org")
+	require.NoError(t, config.LoadConfig(t.TempDir(), ""))
+	c := config.GetURLDownloadsConfig()
+	require.True(t, c.Enabled)
+	require.Equal(t, 3, c.MaxActive)
+	require.Equal(t, int64(1048576), c.SpeedLimit)
+	require.Equal(t, []int{80, 443, 8443}, c.AllowedPorts)
+	require.Equal(t, []string{"cdn.example.com", "*.example.org"}, c.AllowedHosts)
+	require.Equal(t, int64(100<<30), c.MaxFileSize)
+	require.NoError(t, c.Validate())
+}

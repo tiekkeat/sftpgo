@@ -196,7 +196,7 @@ func (fs *GCSFs) Create(name string, flag, checks int) (File, PipeWriter, func()
 	bkt := fs.svc.Bucket(fs.config.Bucket)
 	obj := bkt.Object(name)
 
-	if flag == -1 {
+	if flag == -1 || flag&os.O_EXCL != 0 {
 		obj = obj.If(storage.Conditions{DoesNotExist: true})
 	} else {
 		attrs, statErr = fs.headObject(name)
@@ -255,7 +255,7 @@ func (fs *GCSFs) Create(name string, flag, checks int) (File, PipeWriter, func()
 		metric.GCSTransferCompleted(n, 0, err)
 	}()
 
-	if uploadMode&8 != 0 {
+	if uploadMode&8 != 0 && (flag == -1 || flag&os.O_EXCL == 0) {
 		return nil, p, nil, nil
 	}
 	return nil, p, cancelFn, nil
@@ -1062,3 +1062,6 @@ func (l *gcsDirLister) Close() error {
 	clear(l.prefixes)
 	return l.baseDirLister.Close()
 }
+
+// SupportsExclusiveCreate reports whether create-only URL imports can preserve conflicts.
+func (fs *GCSFs) SupportsExclusiveCreate() bool { return true }

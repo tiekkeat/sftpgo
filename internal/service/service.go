@@ -122,6 +122,16 @@ func (s *Service) Start() error {
 		return err
 	}
 
+	err := s.LoadInitialData()
+	if err != nil {
+		logger.Error(logSender, "", "unable to load initial data: %v", err)
+		logger.ErrorToConsole("unable to load initial data: %v", err)
+	}
+
+	providerConf := config.GetProviderConf()
+	if err := httpd.InitializeURLDownloads(config.GetURLDownloadsConfig(), s.ConfigDir, providerConf.GetShared()); err != nil {
+		return err
+	}
 	s.startServices()
 	go func() { _ = common.Config.ExecuteStartupHook() }()
 
@@ -211,11 +221,6 @@ func (s *Service) initializeServices() error {
 }
 
 func (s *Service) startServices() {
-	err := s.LoadInitialData()
-	if err != nil {
-		logger.Error(logSender, "", "unable to load initial data: %v", err)
-		logger.ErrorToConsole("unable to load initial data: %v", err)
-	}
 
 	sftpdConf := config.GetSFTPDConfig()
 	ftpdConf := config.GetFTPDConfig()
@@ -306,6 +311,7 @@ func (s *Service) Wait() {
 
 // Stop terminates the service unblocking the Wait method
 func (s *Service) Stop() {
+	httpd.StopURLDownloads()
 	close(s.Shutdown)
 	logger.Debug(logSender, "", "Service stopped")
 }

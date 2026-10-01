@@ -281,7 +281,7 @@ func (fs *S3Fs) Create(name string, flag, checks int) (File, PipeWriter, func(),
 		} else {
 			contentType = mime.TypeByExtension(path.Ext(name))
 		}
-		err := fs.handleUpload(ctx, r, name, contentType)
+		err := fs.handleUpload(ctx, r, name, contentType, flag != -1 && flag&os.O_EXCL != 0)
 		r.CloseWithError(err)
 		p.Done(err)
 		fsLog(fs, logger.LevelDebug, "upload completed, path: %q, acl: %q, readed bytes: %d, err: %+v",
@@ -309,7 +309,7 @@ func (fs *S3Fs) Create(name string, flag, checks int) (File, PipeWriter, func(),
 		}
 	}
 
-	if uploadMode&4 != 0 {
+	if uploadMode&4 != 0 && (flag == -1 || flag&os.O_EXCL == 0) {
 		return nil, p, nil, nil
 	}
 	return nil, p, cancelFn, nil
@@ -964,14 +964,15 @@ func (fs *S3Fs) uploadPart(ctx context.Context, name, uploadID string, partNumbe
 	return resp.ETag, nil
 }
 
-func (fs *S3Fs) completeMultipartUpload(ctx context.Context, name, uploadID string, completedParts []types.CompletedPart) error {
+func (fs *S3Fs) completeMultipartUpload(ctx context.Context, name, uploadID string, completedParts []types.CompletedPart, exclusive ...bool) error {
 	ctx, cancelFn := context.WithDeadline(ctx, time.Now().Add(fs.ctxTimeout))
 	defer cancelFn()
 
 	_, err := fs.svc.CompleteMultipartUpload(ctx, &s3.CompleteMultipartUploadInput{
-		Bucket:   aws.String(fs.config.Bucket),
-		Key:      aws.String(name),
-		UploadId: aws.String(uploadID),
+		IfNoneMatch: exclusiveCondition(exclusive),
+		Bucket:      aws.String(fs.config.Bucket),
+		Key:         aws.String(name),
+		UploadId:    aws.String(uploadID),
 		MultipartUpload: &types.CompletedMultipartUpload{
 			Parts: completedParts,
 		},
@@ -991,7 +992,7 @@ func (fs *S3Fs) abortMultipartUpload(name, uploadID string) error {
 	return err
 }
 
-func (fs *S3Fs) singlePartUpload(ctx context.Context, name, contentType string, data []byte) error {
+func (fs *S3Fs) singlePartUpload(ctx context.Context, name, contentType string, data []byte, exclusive ...bool) error {
 	timeout := time.Duration(fs.config.UploadPartSize/(1024*1024)) * time.Minute
 	if fs.config.UploadPartMaxTime > 0 {
 		timeout = time.Duration(fs.config.UploadPartMaxTime) * time.Second
@@ -1001,6 +1002,7 @@ func (fs *S3Fs) singlePartUpload(ctx context.Context, name, contentType string, 
 
 	contentLength := int64(len(data))
 	_, err := fs.svc.PutObject(ctx, &s3.PutObjectInput{
+		IfNoneMatch:          exclusiveCondition(exclusive),
 		Bucket:               aws.String(fs.config.Bucket),
 		Key:                  aws.String(name),
 		ACL:                  types.ObjectCannedACL(fs.config.ACL),
@@ -1015,14 +1017,14 @@ func (fs *S3Fs) singlePartUpload(ctx context.Context, name, contentType string, 
 	return err
 }
 
-func (fs *S3Fs) handleUpload(ctx context.Context, reader io.Reader, name, contentType string) error {
+func (fs *S3Fs) handleUpload(ctx context.Context, reader io.Reader, name, contentType string, exclusive ...bool) error {
 	pool := newBufferAllocator(int(fs.config.UploadPartSize))
 	defer pool.free()
 
 	firstBuf := pool.getBuffer()
 	firstReadSize, err := readFill(reader, firstBuf)
 	if err == io.EOF {
-		return fs.singlePartUpload(ctx, name, contentType, firstBuf[:firstReadSize])
+		return fs.singlePartUpload(ctx, name, contentType, firstBuf[:firstReadSize], exclusive...)
 	}
 	if err != nil {
 		return err
@@ -1129,7 +1131,7 @@ func (fs *S3Fs) handleUpload(ctx context.Context, reader io.Reader, name, conten
 		return getPartNumber(completedParts[i].PartNumber) < getPartNumber(completedParts[j].PartNumber)
 	})
 
-	return fs.completeMultipartUpload(ctx, name, uploadID, completedParts)
+	return fs.completeMultipartUpload(ctx, name, uploadID, completedParts, exclusive...)
 }
 
 func (fs *S3Fs) doMultipartCopy(source, target, contentType string, fileSize int64) error {
@@ -1441,3 +1443,6 @@ func pathEscape(in string) string {
 	u.Path = in
 	return strings.ReplaceAll(u.String(), "+", "%2B")
 }
+
+// SupportsExclusiveCreate reports whether create-only URL imports can preserve conflicts.
+func (fs *S3Fs) SupportsExclusiveCreate() bool { return fs.config.Endpoint == "" }

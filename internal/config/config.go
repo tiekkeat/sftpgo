@@ -16,6 +16,7 @@
 package config
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -32,6 +33,7 @@ import (
 	"github.com/drakkan/sftpgo/v2/internal/command"
 	"github.com/drakkan/sftpgo/v2/internal/common"
 	"github.com/drakkan/sftpgo/v2/internal/dataprovider"
+	"github.com/drakkan/sftpgo/v2/internal/downloadmanager"
 	"github.com/drakkan/sftpgo/v2/internal/ftpd"
 	"github.com/drakkan/sftpgo/v2/internal/httpclient"
 	"github.com/drakkan/sftpgo/v2/internal/httpd"
@@ -177,20 +179,21 @@ var (
 )
 
 type globalConfig struct {
-	Common          common.Configuration  `json:"common" mapstructure:"common"`
-	ACME            acme.Configuration    `json:"acme" mapstructure:"acme"`
-	SFTPD           sftpd.Configuration   `json:"sftpd" mapstructure:"sftpd"`
-	FTPD            ftpd.Configuration    `json:"ftpd" mapstructure:"ftpd"`
-	WebDAVD         webdavd.Configuration `json:"webdavd" mapstructure:"webdavd"`
-	ProviderConf    dataprovider.Config   `json:"data_provider" mapstructure:"data_provider"`
-	HTTPDConfig     httpd.Conf            `json:"httpd" mapstructure:"httpd"`
-	HTTPConfig      httpclient.Config     `json:"http" mapstructure:"http"`
-	CommandConfig   command.Config        `json:"command" mapstructure:"command"`
-	KMSConfig       kms.Configuration     `json:"kms" mapstructure:"kms"`
-	MFAConfig       mfa.Config            `json:"mfa" mapstructure:"mfa"`
-	TelemetryConfig telemetry.Conf        `json:"telemetry" mapstructure:"telemetry"`
-	PluginsConfig   []plugin.Config       `json:"plugins" mapstructure:"plugins"`
-	SMTPConfig      smtp.Config           `json:"smtp" mapstructure:"smtp"`
+	URLDownloads    downloadmanager.Config `json:"url_downloads" mapstructure:"url_downloads"`
+	Common          common.Configuration   `json:"common" mapstructure:"common"`
+	ACME            acme.Configuration     `json:"acme" mapstructure:"acme"`
+	SFTPD           sftpd.Configuration    `json:"sftpd" mapstructure:"sftpd"`
+	FTPD            ftpd.Configuration     `json:"ftpd" mapstructure:"ftpd"`
+	WebDAVD         webdavd.Configuration  `json:"webdavd" mapstructure:"webdavd"`
+	ProviderConf    dataprovider.Config    `json:"data_provider" mapstructure:"data_provider"`
+	HTTPDConfig     httpd.Conf             `json:"httpd" mapstructure:"httpd"`
+	HTTPConfig      httpclient.Config      `json:"http" mapstructure:"http"`
+	CommandConfig   command.Config         `json:"command" mapstructure:"command"`
+	KMSConfig       kms.Configuration      `json:"kms" mapstructure:"kms"`
+	MFAConfig       mfa.Config             `json:"mfa" mapstructure:"mfa"`
+	TelemetryConfig telemetry.Conf         `json:"telemetry" mapstructure:"telemetry"`
+	PluginsConfig   []plugin.Config        `json:"plugins" mapstructure:"plugins"`
+	SMTPConfig      smtp.Config            `json:"smtp" mapstructure:"smtp"`
 }
 
 func init() {
@@ -203,6 +206,7 @@ func init() {
 func Init() {
 	// create a default configuration to use if no config file is provided
 	globalConf = globalConfig{
+		URLDownloads: downloadmanager.DefaultConfig(),
 		Common: common.Configuration{
 			IdleTimeout: 15,
 			UploadMode:  0,
@@ -2069,6 +2073,12 @@ func getCommandConfigsFromEnv(idx int) {
 }
 
 func setViperDefaults() {
+	downloadDefaults, _ := json.Marshal(globalConf.URLDownloads)
+	var downloadFields map[string]any
+	_ = json.Unmarshal(downloadDefaults, &downloadFields)
+	for key, value := range downloadFields {
+		viper.SetDefault("url_downloads."+key, value)
+	}
 	viper.SetDefault("common.idle_timeout", globalConf.Common.IdleTimeout)
 	viper.SetDefault("common.upload_mode", globalConf.Common.UploadMode)
 	viper.SetDefault("common.actions.execute_on", globalConf.Common.Actions.ExecuteOn)
@@ -2312,3 +2322,6 @@ func lookupStringListFromEnv(envName string) ([]string, bool) {
 	}
 	return nil, false
 }
+
+// GetURLDownloadsConfig returns server-side URL download settings.
+func GetURLDownloadsConfig() downloadmanager.Config { return globalConf.URLDownloads }

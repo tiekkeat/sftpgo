@@ -1578,3 +1578,18 @@ func (b *bufferAllocator) free() {
 func fsLog(fs Fs, level logger.LogLevel, format string, v ...any) {
 	logger.Log(level, fs.Name(), fs.ConnectionID(), format, v...)
 }
+
+// exclusiveCondition is used only by create-only imports.
+func exclusiveCondition(exclusive []bool) *string {
+	if len(exclusive) > 0 && exclusive[0] {
+		v := "*"
+		return &v
+	}
+	return nil
+}
+
+// CanCreateExclusive requires explicit support; an unfamiliar backend must not silently overwrite.
+func CanCreateExclusive(fs Fs) bool {
+	creator, ok := fs.(interface{ SupportsExclusiveCreate() bool })
+	return ok && creator.SupportsExclusiveCreate()
+}

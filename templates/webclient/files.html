@@ -50,7 +50,10 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
                     <span data-i18n="fs.new_folder">New Folder</span>
                 </button>
                 {{- end}}
-                {{- if .CanAddFiles}}
+                {{- if and .CanAddFiles .CanDownloadURLs}}
+<a href="{{.DownloadsURL}}?directory={{.URLDownloadDirectory}}" class="btn btn-light-primary me-3" data-i18n="url_downloads.add">Download from URL</a>
+{{- end}}
+{{- if .CanAddFiles}}
                 <button type="button" class="btn btn-flex btn-primary" data-bs-toggle="modal" data-bs-target="#modal_upload">
                     <i class="ki-duotone ki-folder-up fs-2">
                         <span class="path1"></span>

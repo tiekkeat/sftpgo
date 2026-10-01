@@ -428,3 +428,6 @@ func (l *cryptFsDirLister) Next(limit int) ([]os.FileInfo, error) {
 func (l *cryptFsDirLister) Close() error {
 	return l.f.Close()
 }
+
+// SupportsExclusiveCreate reports whether create-only URL imports can preserve conflicts.
+func (fs *CryptFs) SupportsExclusiveCreate() bool { return true }
