@@ -1,0 +1,7 @@
+.git
+sftpgo
+sftpgo.exe
+**/*.log
+docker/custom/.env
+docker/custom/backups
+tests/eventsearcher/eventsearcher

@@ -69,6 +69,10 @@ Your sponsorship helps cover maintenance, security updates and ongoing developme
 
 ## Documentation
 
+The opt-in [URL download manager](examples/url-downloads/README.md) adds persistent downloads, progress, pause/resume, and user/group limits to the web client.
+
+For the local custom image, Compose deployment, credentials, and backup instructions, see [Custom Docker deployment](docker/custom/README.md).
+
 You can explore all supported features and configuration options at [docs.sftpgo.com](https://docs.sftpgo.com/latest/).
 
 **Note:** The link above refers to the **Community Edition**.

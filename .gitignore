@@ -1,3 +1,7 @@
 # compilation output
 sftpgo
 sftpgo.exe
+
+# Local Docker credentials and backup archives
+docker/custom/.env
+docker/custom/backups/

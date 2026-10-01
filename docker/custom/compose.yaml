@@ -1,0 +1,61 @@
+name: sftpgo-custom
+services:
+  sftpgo:
+    image: sftpgo-custom:url-downloads
+    build:
+      context: ../..
+      dockerfile: docker/custom/Dockerfile
+    container_name: sftpgo-custom
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 90s
+    ports:
+      - "0.0.0.0:18080:8080"
+      - "0.0.0.0:2022:2022"
+    environment:
+      SFTPGO_DATA_PROVIDER__DRIVER: sqlite
+      SFTPGO_DATA_PROVIDER__NAME: /var/lib/sftpgo/sftpgo.db
+      SFTPGO_DATA_PROVIDER__CREATE_DEFAULT_ADMIN: "true"
+      SFTPGO_DATA_PROVIDER__USERS_BASE_DIR: /srv/sftpgo/data
+      SFTPGO_DATA_PROVIDER__BACKUPS_PATH: /srv/sftpgo/backups
+      SFTPGO_DEFAULT_ADMIN_USERNAME: ${SFTPGO_ADMIN_USERNAME:?Set SFTPGO_ADMIN_USERNAME in .env}
+      SFTPGO_DEFAULT_ADMIN_PASSWORD: ${SFTPGO_ADMIN_PASSWORD:?Set SFTPGO_ADMIN_PASSWORD in .env}
+      SFTPGO_HTTPD__BINDINGS__0__PORT: "8080"
+      SFTPGO_HTTPD__BINDINGS__0__ADDRESS: 0.0.0.0
+      SFTPGO_HTTPD__TEMPLATES_PATH: /usr/share/sftpgo/templates
+      SFTPGO_HTTPD__STATIC_FILES_PATH: /usr/share/sftpgo/static
+      SFTPGO_HTTPD__OPENAPI_PATH: /usr/share/sftpgo/openapi
+      SFTPGO_SMTP__TEMPLATES_PATH: /usr/share/sftpgo/templates
+      SFTPGO_SFTPD__BINDINGS__0__PORT: "2022"
+      SFTPGO_SFTPD__BINDINGS__0__ADDRESS: 0.0.0.0
+      SFTPGO_SFTPD__HOST_KEYS: /var/lib/sftpgo/id_rsa,/var/lib/sftpgo/id_ecdsa,/var/lib/sftpgo/id_ed25519
+      SFTPGO_URL_DOWNLOADS__ENABLED: "true"
+      SFTPGO_URL_DOWNLOADS__DATABASE_PATH: /var/lib/sftpgo/url-downloads/jobs.db
+      SFTPGO_URL_DOWNLOADS__STAGING_PATH: /var/lib/sftpgo/url-downloads/staging
+      SFTPGO_URL_DOWNLOADS__MAX_ACTIVE: "8"
+      SFTPGO_URL_DOWNLOADS__MAX_ACTIVE_PER_USER: "2"
+      SFTPGO_URL_DOWNLOADS__MAX_FILE_SIZE: "107374182400"
+      SFTPGO_URL_DOWNLOADS__MAX_STAGING_SIZE: "536870912000"
+      SFTPGO_URL_DOWNLOADS__MAX_STAGING_PER_USER: "214748364800"
+      SFTPGO_URL_DOWNLOADS__MIN_FREE_SPACE: "5368709120"
+      SFTPGO_URL_DOWNLOADS__SPEED_LIMIT: "0"
+      SFTPGO_URL_DOWNLOADS__SPEED_LIMIT_PER_USER: "0"
+    volumes:
+      - state:/var/lib/sftpgo
+      - files:/srv/sftpgo
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--max-time", "5", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+volumes:
+  state:
+    name: sftpgo-custom-state
+  files:
+    name: sftpgo-custom-files
