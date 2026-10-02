@@ -1694,10 +1694,27 @@ func TestURLDownloadsConfiguration(t *testing.T) {
 	require.NoError(t, config.LoadConfig(t.TempDir(), ""))
 	c := config.GetURLDownloadsConfig()
 	require.True(t, c.Enabled)
+	require.True(t, c.AllowInternalURLs)
 	require.Equal(t, 3, c.MaxActive)
 	require.Equal(t, int64(1048576), c.SpeedLimit)
 	require.Equal(t, []int{80, 443, 8443}, c.AllowedPorts)
 	require.Equal(t, []string{"cdn.example.com", "*.example.org"}, c.AllowedHosts)
 	require.Equal(t, int64(100<<30), c.MaxFileSize)
 	require.NoError(t, c.Validate())
+}
+
+func TestURLDownloadsInternalConfiguration(t *testing.T) {
+	reset()
+	dir := t.TempDir()
+	require.NoError(t, config.LoadConfig(dir, ""))
+	require.True(t, config.GetURLDownloadsConfig().AllowInternalURLs)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "sftpgo.json"), []byte(`{"url_downloads":{"allow_internal_urls":false}}`), 0600))
+	require.NoError(t, config.LoadConfig(dir, "sftpgo.json"))
+	require.False(t, config.GetURLDownloadsConfig().AllowInternalURLs)
+	t.Setenv("SFTPGO_URL_DOWNLOADS__ALLOW_INTERNAL_URLS", "true")
+	require.NoError(t, config.LoadConfig(dir, "sftpgo.json"))
+	require.True(t, config.GetURLDownloadsConfig().AllowInternalURLs)
+	t.Setenv("SFTPGO_URL_DOWNLOADS__ALLOW_INTERNAL_URLS", "false")
+	require.NoError(t, config.LoadConfig(t.TempDir(), ""))
+	require.False(t, config.GetURLDownloadsConfig().AllowInternalURLs)
 }

@@ -58,13 +58,14 @@ The first build downloads base images and Go modules. Docker caches subsequent b
 1. Sign into WebAdmin and create a normal user. The administrator account is separate from transfer users.
 2. Use local storage and a home under `/srv/sftpgo/data/<username>`, or configure another supported writable backend. Grant upload permission for the destination folder and enable HTTP access.
 3. On the user or group edit page, expand the separate **URL download policy** section, set **Access** to **Enabled**, and save. Configure smaller per-user limits if needed. Earlier builds placed these settings inside the collapsed **ACLs** section.
-4. Sign into WebClient as that user. Open **Downloads**, enter a direct public HTTP/HTTPS file URL, choose an existing destination folder and filename, and submit.
+4. Sign into WebClient as that user. Open **Downloads**, enter a direct HTTP/HTTPS file URL, choose an existing destination folder and filename, and submit.
 5. Monitor fetching and importing progress. Pause/resume fetching, cancel active jobs, or retry failed jobs with a new destination filename. Existing destination files are preserved.
 
-The manager is enabled globally in Compose. Its deployment defaults are:
+The manager is enabled globally in Compose. Internal URLs are also enabled by default; no internal allowlist is required. To ban internal downloads for everyone, change `SFTPGO_URL_DOWNLOADS__ALLOW_INTERNAL_URLS` to `"false"` and recreate the container. Explicit host bans still apply. Internal URLs may use any HTTP/HTTPS port; public URLs retain the configured public port/host restrictions. Localhost means the container, and access includes link-local/metadata endpoints when enabled. Its deployment defaults are:
 
 | Setting | Value |
 | --- | ---: |
+| Internal URL downloads | Enabled for all authorized download users |
 | Global / per-user active jobs | 8 / 2 |
 | Maximum file | 100 GiB |
 | Global / per-user staging allowance | 500 GiB / 200 GiB |
@@ -76,7 +77,7 @@ The manager is enabled globally in Compose. Its deployment defaults are:
 
 The 500 GiB staging value is a ceiling, not preallocated disk. This machine had about 366 GiB available at setup; the free-space floor also applies, and user files share the host disk. Reduce these ceilings to suit actual capacity. Set `SFTPGO_URL_DOWNLOADS__SPEED_LIMIT` or `SFTPGO_URL_DOWNLOADS__SPEED_LIMIT_PER_USER` in Compose to a value in bytes/second, for example `10485760` for 10 MiB/s. Existing user upload limits and quotas still apply. After changing environment settings, use `up -d` to recreate the container; `restart` does not apply changed environment values.
 
-Full policy, storage, security, API, and recovery details are in [the URL download guide](../../examples/url-downloads/README.md). This manager supports one server process, public Internet HTTP(S) sources, and the documented create-only storage backends. HTTP filesystem storage and custom S3 endpoints are excluded.
+Full policy, storage, security, API, and recovery details are in [the URL download guide](../../examples/url-downloads/README.md). This manager supports one server process, public and internal HTTP(S) sources, and the documented create-only storage backends. HTTP filesystem storage and custom S3 endpoints are excluded.
 
 ## Persistent storage
 

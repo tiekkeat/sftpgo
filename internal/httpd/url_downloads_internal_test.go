@@ -141,6 +141,7 @@ func TestURLDownloadAPIIsolationAndValidation(t *testing.T) {
 	bob := newDownloadTestUser(t)
 	cfg := downloadmanager.DefaultConfig()
 	cfg.Enabled = true
+	cfg.AllowInternalURLs = false
 	cfg.MaxFileSize = 1 << 20
 	cfg.MaxStagingSize = 4 << 20
 	cfg.MaxStagingPerUser = 2 << 20
@@ -198,6 +199,11 @@ func TestURLDownloadTemplatesAndForm(t *testing.T) {
 	require.Contains(t, b.String(), "/web/client/downloads/jobs")
 	// Every rendered user string stays in textContent or an escaped template context.
 	require.Contains(t, b.String(), "td.textContent=text")
+	require.Contains(t, b.String(), "This server permits public URLs only.")
+	page.Limits.AllowInternalURLs = true
+	b.Reset()
+	require.NoError(t, clientTemplates["urldownloads.html"].ExecuteTemplate(&b, "base", page))
+	require.Contains(t, b.String(), "Public and internal URLs are permitted by this server.")
 }
 
 func TestURLDownloadNavigationUsesProviderPolicy(t *testing.T) {

@@ -30,6 +30,7 @@ services:
       SFTPGO_SFTPD__BINDINGS__0__ADDRESS: 0.0.0.0
       SFTPGO_SFTPD__HOST_KEYS: /var/lib/sftpgo/id_rsa,/var/lib/sftpgo/id_ecdsa,/var/lib/sftpgo/id_ed25519
       SFTPGO_URL_DOWNLOADS__ENABLED: "true"
+      SFTPGO_URL_DOWNLOADS__ALLOW_INTERNAL_URLS: "true"
       SFTPGO_URL_DOWNLOADS__DATABASE_PATH: /var/lib/sftpgo/url-downloads/jobs.db
       SFTPGO_URL_DOWNLOADS__STAGING_PATH: /var/lib/sftpgo/url-downloads/staging
       SFTPGO_URL_DOWNLOADS__MAX_ACTIVE: "8"

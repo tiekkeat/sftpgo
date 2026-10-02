@@ -1,7 +1,8 @@
 {{- template "base" .}}
 {{- define "page_body"}}
 <div class="card shadow-sm"><div class="card-header"><h3 class="card-title" data-i18n="url_downloads.title">Downloads</h3></div><div class="card-body">
-<p data-i18n="url_downloads.description">Fetch a direct public HTTP/HTTPS file into your storage. Fetching and importing have separate progress. Existing files are preserved.</p>
+<p data-i18n="url_downloads.description">Fetch a direct HTTP/HTTPS file into your storage. Fetching and importing have separate progress. Existing files are preserved.</p>
+{{if .Limits.AllowInternalURLs}}<p class="text-muted" data-i18n="url_downloads.internal_enabled">Public and internal URLs are permitted by this server.</p>{{else}}<p class="text-muted" data-i18n="url_downloads.internal_disabled">This server permits public URLs only.</p>{{end}}
 <div id="download-error" class="alert alert-danger d-none" role="alert"></div>
 {{if .CanCreate}}
 <form id="download-form" class="mb-8">

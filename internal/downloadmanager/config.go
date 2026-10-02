@@ -14,6 +14,7 @@ import (
 // Config controls admission, staging, and outbound HTTP requests. Speeds are bytes/s.
 type Config struct {
 	Enabled               bool     `json:"enabled" mapstructure:"enabled"`
+	AllowInternalURLs     bool     `json:"allow_internal_urls" mapstructure:"allow_internal_urls"`
 	DatabasePath          string   `json:"database_path" mapstructure:"database_path"`
 	StagingPath           string   `json:"staging_path" mapstructure:"staging_path"`
 	MaxActive             int      `json:"max_active" mapstructure:"max_active"`
@@ -41,6 +42,7 @@ type Config struct {
 // DefaultConfig leaves the feature disabled and bounds queue and staging resources.
 func DefaultConfig() Config {
 	return Config{
+		AllowInternalURLs:     true,
 		DatabasePath:          "url-downloads/jobs.db",
 		StagingPath:           "url-downloads/staging",
 		MaxActive:             8,

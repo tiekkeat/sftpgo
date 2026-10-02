@@ -1,6 +1,7 @@
 {
   "url_downloads": {
       "enabled": false,
+      "allow_internal_urls": true,
       "database_path": "url-downloads/jobs.db",
       "staging_path": "url-downloads/staging",
       "max_active": 8,

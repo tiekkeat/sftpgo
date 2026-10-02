@@ -60,15 +60,6 @@ func (c Config) validateURL(raw string) (*url.URL, error) {
 			return nil, errors.New("source host is denied")
 		}
 	}
-	if len(c.AllowedHosts) > 0 {
-		ok := false
-		for _, h := range c.AllowedHosts {
-			ok = ok || hostMatches(host, h)
-		}
-		if !ok {
-			return nil, errors.New("source host is not allowed")
-		}
-	}
 	port := 80
 	if u.Scheme == "https" {
 		port = 443
@@ -79,18 +70,70 @@ func (c Config) validateURL(raw string) (*url.URL, error) {
 			return nil, errors.New("invalid source port")
 		}
 	}
-	ok := false
-	for _, p := range c.AllowedPorts {
-		ok = ok || p == port
+	if port < 1 || port > 65535 {
+		return nil, errors.New("invalid source port")
 	}
-	if !ok {
-		return nil, errors.New("source port is not allowed")
+	if ip, e := netip.ParseAddr(host); e == nil {
+		if e = c.validateDestination(host, port, ip); e != nil {
+			return nil, e
+		}
+	} else if !c.AllowInternalURLs {
+		if e = c.validatePublicDestination(host, port); e != nil {
+			return nil, e
+		}
 	}
-	if ip, e := netip.ParseAddr(host); e == nil && !publicIP(ip) {
-		return nil, errors.New("source address is not public")
-	}
+	// With internal access enabled, hostname policy depends on its DNS answers.
+	// DialContext validates every answer before connecting to a pinned address.
 	return u, nil
 }
+
+// validateDestination applies public rules or the server-wide internal switch.
+func (c Config) validateDestination(host string, port int, ip netip.Addr) error {
+	ip = ip.Unmap()
+	if !ip.IsValid() || ip.IsUnspecified() || ip.IsMulticast() || ip == netip.MustParseAddr("255.255.255.255") {
+		return errors.New("source address is not usable unicast")
+	}
+	for _, h := range c.DeniedHosts {
+		if hostMatches(host, h) {
+			return errors.New("source host is denied")
+		}
+	}
+	if publicIP(ip) {
+		return c.validatePublicDestination(host, port)
+	}
+	if !c.AllowInternalURLs {
+		return errors.New("internal source addresses are disabled")
+	}
+	return nil
+}
+
+func (c Config) validatePublicDestination(host string, port int) error {
+	if len(c.AllowedHosts) > 0 {
+		ok := false
+		for _, h := range c.AllowedHosts {
+			ok = ok || hostMatches(host, h)
+		}
+		if !ok {
+			return errors.New("source host is not allowed")
+		}
+	}
+	for _, p := range c.AllowedPorts {
+		if p == port {
+			return nil
+		}
+	}
+	return errors.New("source port is not allowed")
+}
+
+func (c Config) validateResolvedDestination(host string, port int, ips []netip.Addr) error {
+	for _, ip := range ips {
+		if err := c.validateDestination(host, port, ip); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func displayURL(u *url.URL) string {
 	copy := *u
 	copy.RawQuery = ""
@@ -123,10 +166,13 @@ func (c Config) httpClient() *http.Client {
 		if e != nil || len(ips) == 0 {
 			return nil, errors.New("source DNS lookup failed")
 		}
-		for _, ip := range ips {
-			if !publicIP(ip) {
-				return nil, errors.New("source DNS resolved to a blocked address")
-			}
+		portNumber, e := strconv.Atoi(port)
+		if e != nil || portNumber < 1 || portNumber > 65535 {
+			return nil, errors.New("invalid source port")
+		}
+		host = strings.ToLower(strings.TrimSuffix(host, "."))
+		if e = c.validateResolvedDestination(host, portNumber, ips); e != nil {
+			return nil, e
 		}
 		for _, ip := range ips {
 			conn, e := dialer.DialContext(ctx, network, net.JoinHostPort(ip.String(), port))

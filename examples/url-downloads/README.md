@@ -1,6 +1,6 @@
 # URL download manager
 
-The web client can fetch direct public HTTP/HTTPS URLs into a user's existing storage folders. Users see separate fetching and importing progress and can pause, resume, cancel, retry, or remove terminal history. Files with existing names are preserved. Signed URLs work; interactive logins, source authentication headers, FTP/SFTP sources, torrents, and media extraction are not supported.
+The web client can fetch direct HTTP/HTTPS URLs into a user's existing storage folders. Users see separate fetching and importing progress and can pause, resume, cancel, retry, or remove terminal history. Files with existing names are preserved. Signed URLs work; interactive logins, source authentication headers, FTP/SFTP sources, torrents, and media extraction are not supported.
 
 ## Enable and grant access
 
@@ -40,6 +40,7 @@ Users also need upload permission for the destination directory and writable HTT
 | Key | Default | Meaning |
 | --- | ---: | --- |
 | `enabled` | `false` | Global enable switch |
+| `allow_internal_urls` | `true` | Permit internal destinations for all users authorized to download |
 | `max_active` / `max_active_per_user` | 8 / 2 | Fetching and importing jobs share these slots |
 | `max_pending` / `max_pending_per_user` | 1,000 / 100 | Nonterminal jobs, including paused jobs |
 | `max_file_size` | 107374182400 | 100 GiB per file |
@@ -52,10 +53,20 @@ Users also need upload permission for the destination directory and writable HTT
 | `max_redirects` | 5 | Maximum redirect hops |
 | `staging_retention_hours` | 168 | Remove inactive queued/paused/failed staging after seven days |
 | `history_retention_hours` | 720 | Remove terminal history after thirty days |
-| `allowed_ports` | `[80,443]` | Administrator-approved destination ports |
+| `allowed_ports` | `[80,443]` | Administrator-approved public destination ports |
 | `allowed_hosts` / `denied_hosts` | `[]` / `[]` | Optional host restrictions; deny takes precedence |
 
-Host rules accept exact names or `*.example.com`, which matches subdomains, not the bare domain. Host rules and extra ports never bypass public-address checks. Requests, redirects, and DNS results reject private, loopback, link-local, reserved, multicast, and metadata addresses. Connections dial validated IP addresses directly while retaining normal TLS hostname verification. The manager does not inherit hook credentials, cookies, TLS bypass settings, or environment proxies.
+Internal URLs are enabled by default, including when `allow_internal_urls` is omitted. This is a server-wide network setting, not a grant of download access: user/primary-group access must still be enabled. To block internal URLs for everyone, set `url_downloads.allow_internal_urls` to `false`, or add this environment setting in Portainer/Compose and recreate the container:
+
+```yaml
+SFTPGO_URL_DOWNLOADS__ALLOW_INTERNAL_URLS: "false"
+```
+
+When enabled, every reachable internal unicast destination is permitted without an IP or hostname allowlist: LAN, Docker networks, localhost, IPv6 private addresses, and link-local/metadata endpoints. Internal HTTP/HTTPS URLs can use any port from 1–65535 and bypass `allowed_hosts`. Explicit `denied_hosts` rules always apply. For example, `http://192.168.1.20:8080/file.zip` and `http://fileserver:9000/file.zip` work if the container can reach and resolve those hosts. Localhost refers to the SFTPGo container itself; use a Docker service name or a reachable host address for another server. Scoped IPv6 URLs (containing an interface zone) remain unsupported.
+
+Public destinations retain `allowed_ports` and `allowed_hosts` restrictions. Host rules accept exact names or `*.example.com`, which matches subdomains, not the bare domain. With internal URLs disabled, the original public-only address restrictions apply, including rejection of private, loopback, link-local, reserved, and metadata addresses. Unspecified, multicast, and broadcast destinations are rejected in either mode. Every DNS answer and redirect is checked; a mixed DNS answer set is rejected if any address violates the applicable policy. With internal access enabled, hostname-dependent decisions are deferred until DNS resolution and failures appear in job status.
+
+Connections dial validated IP addresses directly while retaining normal TLS hostname verification, even for internal HTTPS servers. The manager does not inherit hook credentials, cookies, TLS bypass settings, or environment proxies. This setting requires a service restart; it does not add source login flows or custom authentication headers.
 
 Unknown-length jobs initially reserve their maximum permitted size within configured staging allowances. Once response headers provide a length, reservations shrink. Physical disk allocation grows with received data; the free-space floor is checked during writes. When slots or staging reservations are unavailable, jobs remain queued. Failed and paused jobs retain staged data and consume staging allowance until removed or expired.
 

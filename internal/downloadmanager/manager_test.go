@@ -88,6 +88,7 @@ func TestPublicNetworkPolicy(t *testing.T) {
 	require.True(t, publicIP(netip.MustParseAddr("8.8.8.8")))
 	require.True(t, publicIP(netip.MustParseAddr("2606:4700:4700::1111")))
 	c := testConfig()
+	c.AllowInternalURLs = false
 	for _, raw := range []string{"file:///etc/passwd", "ftp://example.com/a", "http://user:password@example.com/a", "http://127.0.0.1/a", "http://[::1]/a", "https://example.com:8443/a", "https://example.com/a#fragment"} {
 		_, e := c.validateURL(raw)
 		require.Error(t, e, raw)
@@ -104,7 +105,7 @@ func TestPublicNetworkPolicy(t *testing.T) {
 	defer server.Close()
 	_, e = c.httpClient().Get(server.URL)
 	require.Error(t, e)
-	client := testConfig().httpClient()
+	client := c.httpClient()
 	req, _ := http.NewRequest("GET", "http://127.0.0.1/private", nil)
 	require.Error(t, client.CheckRedirect(req, []*http.Request{req}))
 }
